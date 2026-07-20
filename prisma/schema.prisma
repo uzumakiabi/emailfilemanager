@@ -1,0 +1,66 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/email_file_manager/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  settings      Settings?
+  googleAccount GoogleAccount?
+  activityLogs  ActivityLog[]
+}
+
+model Settings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  sourceFolder    String   @default("Plati")
+  destinationFolder String @default("ReturnedPlati")
+  recipientEmail  String   @default("celaplata@ujp.gov.mk")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GoogleAccount {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  googleEmail   String?
+  accessToken   String?   @db.Text
+  refreshToken  String?   @db.Text
+  tokenExpiry   DateTime?
+  scopes        String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id          String    @id @default(cuid())
+  userId      String
+  action      String    // 'SEND_FILE' | 'RECEIVE_FILE' | 'ERROR' | 'INFO'
+  fileName    String?
+  fileId      String?
+  recipient   String?
+  sender      String?
+  status      String    // 'SUCCESS' | 'FAILED' | 'IN_PROGRESS'
+  message     String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}

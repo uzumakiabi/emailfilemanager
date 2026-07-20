@@ -1,0 +1,77 @@
+{
+  "name": "email-file-manager-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "description": "Send files as email attachments one by one, and download attachments from reply emails. Works with Gmail, Outlook, Yahoo, or custom IMAP/SMTP.",
+  "author": "",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"npm:dev:electron\"",
+    "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development tsc -p electron/tsconfig.json && electron dist-electron/main.js",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist": "npm run build && electron-builder --mac --win"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "2.1.0",
+    "@radix-ui/react-select": "2.1.1",
+    "@radix-ui/react-slot": "1.1.0",
+    "@radix-ui/react-tabs": "1.1.0",
+    "class-variance-authority": "0.7.0",
+    "clsx": "2.1.1",
+    "electron-store": "8.2.0",
+    "imapflow": "1.0.164",
+    "lucide-react": "0.446.0",
+    "mailparser": "3.7.1",
+    "nodemailer": "6.9.15",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "sonner": "1.5.0",
+    "tailwind-merge": "2.5.2"
+  },
+  "devDependencies": {
+    "@types/mailparser": "3.4.4",
+    "@types/nodemailer": "6.4.16",
+    "@types/react": "18.2.22",
+    "@types/react-dom": "18.2.7",
+    "@vitejs/plugin-react": "4.3.1",
+    "autoprefixer": "10.4.15",
+    "concurrently": "9.0.1",
+    "cross-env": "7.0.3",
+    "electron": "31.4.0",
+    "electron-builder": "24.13.3",
+    "postcss": "8.4.30",
+    "tailwindcss": "3.3.3",
+    "tailwindcss-animate": "1.0.7",
+    "typescript": "5.2.2",
+    "vite": "5.4.6",
+    "wait-on": "8.0.1"
+  },
+  "build": {
+    "appId": "com.emailfilemanager.desktop",
+    "productName": "Email File Manager",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  }
+}

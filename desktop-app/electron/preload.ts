@@ -14,5 +14,5 @@ contextBridge.exposeInMainWorld('api', {
 
   sendFiles: (filePaths: string[]) => ipcRenderer.invoke('mail:sendFiles', filePaths),
   checkResponses: () => ipcRenderer.invoke('mail:checkResponses'),
-  testConnection: () => ipcRenderer.invoke('mail:testConnection'),
+  testConnection: (override?: Partial<AppSettings>) => ipcRenderer.invoke('mail:testConnection', override),
 })

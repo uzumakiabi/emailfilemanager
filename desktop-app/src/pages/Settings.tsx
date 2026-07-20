@@ -57,7 +57,11 @@ export default function SettingsPage() {
   const handleTest = async () => {
     setTesting(true)
     try {
-      const res = await window.api.testConnection()
+      const res = await window.api.testConnection({
+        ...settings,
+        email: settings.email.trim(),
+        appPassword: settings.appPassword.trim(),
+      })
       if (res.smtp && res.imap) toast.success(t('settings.account.testSuccess'))
       else toast.error(res.error ?? t('settings.account.testFailed'))
     } finally {

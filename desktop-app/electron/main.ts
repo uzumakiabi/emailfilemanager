@@ -79,7 +79,7 @@ ipcMain.handle('mail:checkResponses', async () => {
   }
 })
 
-ipcMain.handle('mail:testConnection', async () => {
-  const settings = getSettings()
+ipcMain.handle('mail:testConnection', async (_e, override?: Partial<AppSettings>) => {
+  const settings = { ...getSettings(), ...(override ?? {}) }
   return testConnection(settings)
 })

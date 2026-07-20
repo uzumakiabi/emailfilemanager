@@ -45,7 +45,7 @@ export interface ElectronApi {
   pickFolder: () => Promise<string | null>
   sendFiles: (filePaths: string[]) => Promise<{ ok: boolean; data?: any; error?: string }>
   checkResponses: () => Promise<{ ok: boolean; data?: any; error?: string }>
-  testConnection: () => Promise<{ smtp: boolean; imap: boolean; error?: string }>
+  testConnection: (override?: Partial<AppSettings>) => Promise<{ smtp: boolean; imap: boolean; error?: string }>
 }
 
 declare global {

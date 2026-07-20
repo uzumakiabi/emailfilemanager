@@ -18,14 +18,18 @@ function getTransporter(settings: AppSettings) {
     host: settings.smtpHost,
     port: settings.smtpPort,
     secure: settings.smtpSecure,
-    auth: { user: settings.email, pass: settings.appPassword },
+    auth: { user: settings.email.trim(), pass: settings.appPassword.trim() },
   })
 }
 
-export async function sendFiles(settings: AppSettings, filePaths: string[]): Promise<SendFilesResult> {
-  if (!settings.email || !settings.appPassword) {
-    throw new Error('Email account is not configured. Go to Settings and enter your email + app password.')
+function assertCredentials(settings: AppSettings) {
+  if (!settings.email?.trim() || !settings.appPassword?.trim()) {
+    throw new Error('Email account is not configured. Go to Settings, enter your email + app password, and click "Save settings".')
   }
+}
+
+export async function sendFiles(settings: AppSettings, filePaths: string[]): Promise<SendFilesResult> {
+  assertCredentials(settings)
   if (!settings.recipientEmail) {
     throw new Error('Recipient email is not set. Go to Settings and enter a recipient email.')
   }
@@ -40,8 +44,8 @@ export async function sendFiles(settings: AppSettings, filePaths: string[]): Pro
     try {
       await fs.access(filePath)
       await transporter.sendMail({
-        from: settings.email,
-        to: settings.recipientEmail,
+        from: settings.email.trim(),
+        to: settings.recipientEmail.trim(),
         subject: '',
         text: '',
         attachments: [{ filename: fileName, path: filePath }],
@@ -60,9 +64,7 @@ export async function sendFiles(settings: AppSettings, filePaths: string[]): Pro
 }
 
 export async function checkResponses(settings: AppSettings): Promise<CheckResponsesResult> {
-  if (!settings.email || !settings.appPassword) {
-    throw new Error('Email account is not configured. Go to Settings and enter your email + app password.')
-  }
+  assertCredentials(settings)
   if (!settings.recipientEmail) {
     throw new Error('Recipient email is not set. Go to Settings and enter a recipient email.')
   }
@@ -76,7 +78,7 @@ export async function checkResponses(settings: AppSettings): Promise<CheckRespon
     host: settings.imapHost,
     port: settings.imapPort,
     secure: true,
-    auth: { user: settings.email, pass: settings.appPassword },
+    auth: { user: settings.email.trim(), pass: settings.appPassword.trim() },
     logger: false,
   })
 
@@ -154,6 +156,11 @@ export async function checkResponses(settings: AppSettings): Promise<CheckRespon
 export async function testConnection(settings: AppSettings): Promise<{ smtp: boolean; imap: boolean; error?: string }> {
   const out = { smtp: false, imap: false, error: undefined as string | undefined }
   try {
+    assertCredentials(settings)
+  } catch (e: any) {
+    return { ...out, error: e?.message ?? 'Missing credentials' }
+  }
+  try {
     const transporter = getTransporter(settings)
     await transporter.verify()
     out.smtp = true
@@ -165,7 +172,7 @@ export async function testConnection(settings: AppSettings): Promise<{ smtp: boo
       host: settings.imapHost,
       port: settings.imapPort,
       secure: true,
-      auth: { user: settings.email, pass: settings.appPassword },
+      auth: { user: settings.email.trim(), pass: settings.appPassword.trim() },
       logger: false,
     })
     await client.connect()

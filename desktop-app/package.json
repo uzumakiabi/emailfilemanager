@@ -1,6 +1,6 @@
 {
-  "name": "email-file-manager-desktop",
-  "version": "1.0.0",
+  "name": "pratiplati",
+  "version": "2.0.0",
   "private": true,
   "main": "dist-electron/main.js",
   "description": "Send files as email attachments one by one, and download attachments from reply emails. Works with Gmail, Outlook, Yahoo, or custom IMAP/SMTP.",
@@ -51,8 +51,8 @@
     "wait-on": "8.0.1"
   },
   "build": {
-    "appId": "com.emailfilemanager.desktop",
-    "productName": "Email File Manager",
+    "appId": "com.pratiplati.desktop",
+    "productName": "pratiplati",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",

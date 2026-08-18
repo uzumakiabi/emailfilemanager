@@ -6,8 +6,13 @@ import { PROVIDER_PRESETS } from './providers'
 const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
   provider: 'gmail',
+  authMethod: 'oauth',
   email: '',
   appPassword: '',
+  oauthAccessToken: '',
+  oauthRefreshToken: '',
+  oauthTokenExpiry: null,
+  oauthEmail: '',
   smtpHost: PROVIDER_PRESETS.gmail.smtpHost,
   smtpPort: PROVIDER_PRESETS.gmail.smtpPort,
   smtpSecure: PROVIDER_PRESETS.gmail.smtpSecure,
@@ -15,6 +20,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   imapPort: PROVIDER_PRESETS.gmail.imapPort,
   recipientEmail: '',
   downloadFolder: '',
+  sendDelayMs: 2000,
+  emailSubject: '',
 }
 
 interface StoreSchema {

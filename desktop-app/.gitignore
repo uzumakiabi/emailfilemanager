@@ -3,3 +3,7 @@ dist/
 dist-electron/
 release/
 *.log
+.DS_Store
+
+# OAuth client credentials (real values are baked into installers at build time)
+electron/oauth-credentials.json

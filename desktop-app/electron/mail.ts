@@ -5,7 +5,9 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import Store from 'electron-store'
 import type { AppSettings, SendFilesResult, CheckResponsesResult } from './types'
-import { addLog } from './store'
+import { addLog, saveSettings } from './store'
+import { refreshAccessToken } from './oauth'
+import { getProviderCredentials } from './admin'
 
 const syncStore = new Store<{ lastUid: Record<string, number> }>({ name: 'sync', defaults: { lastUid: {} } })
 
@@ -13,19 +15,65 @@ function syncKey(settings: AppSettings): string {
   return `${settings.email.toLowerCase()}::${settings.recipientEmail.toLowerCase()}`
 }
 
-function getTransporter(settings: AppSettings) {
+function accountEmail(settings: AppSettings): string {
+  return (settings.oauthEmail || settings.email).trim()
+}
+
+function assertCredentials(settings: AppSettings) {
+  if (settings.authMethod === 'oauth') {
+    if (!settings.oauthRefreshToken?.trim()) {
+      throw new Error('Email account is not connected. Go to Settings and click "Connect" to authorize your account.')
+    }
+  } else {
+    if (!settings.email?.trim() || !settings.appPassword?.trim()) {
+      throw new Error('Email account is not configured. Go to Settings, enter your email + password, and click "Save settings".')
+    }
+  }
+}
+
+/** Returns a fresh access token for OAuth providers, refreshing it if near expiry. */
+async function ensureAccessToken(settings: AppSettings): Promise<string> {
+  if (settings.authMethod !== 'oauth') throw new Error('OAuth is not enabled for this account.')
+  if (!settings.oauthRefreshToken) throw new Error('No refresh token available. Reconnect your account.')
+
+  const now = Date.now()
+  if (settings.oauthAccessToken && settings.oauthTokenExpiry && settings.oauthTokenExpiry > now + 60_000) {
+    return settings.oauthAccessToken
+  }
+
+  const creds = getProviderCredentials(settings.provider)
+  const { accessToken, expiry } = await refreshAccessToken(
+    settings.provider,
+    creds.clientId,
+    creds.clientSecret,
+    settings.oauthRefreshToken,
+  )
+  saveSettings({ oauthAccessToken: accessToken, oauthTokenExpiry: expiry })
+  return accessToken
+}
+
+function getSmtpAuth(settings: AppSettings, accessToken: string) {
+  if (settings.authMethod === 'oauth') {
+    return { type: 'OAuth2' as const, user: accountEmail(settings), accessToken }
+  }
+  return { user: settings.email.trim(), pass: settings.appPassword.trim() }
+}
+
+function getImapAuth(settings: AppSettings, accessToken: string) {
+  if (settings.authMethod === 'oauth') {
+    return { user: accountEmail(settings), accessToken }
+  }
+  return { user: settings.email.trim(), pass: settings.appPassword.trim() }
+}
+
+async function getTransporter(settings: AppSettings) {
+  const accessToken = settings.authMethod === 'oauth' ? await ensureAccessToken(settings) : ''
   return nodemailer.createTransport({
     host: settings.smtpHost,
     port: settings.smtpPort,
     secure: settings.smtpSecure,
-    auth: { user: settings.email.trim(), pass: settings.appPassword.trim() },
+    auth: getSmtpAuth(settings, accessToken),
   })
-}
-
-function assertCredentials(settings: AppSettings) {
-  if (!settings.email?.trim() || !settings.appPassword?.trim()) {
-    throw new Error('Email account is not configured. Go to Settings, enter your email + app password, and click "Save settings".')
-  }
 }
 
 export async function sendFiles(settings: AppSettings, filePaths: string[]): Promise<SendFilesResult> {
@@ -34,19 +82,28 @@ export async function sendFiles(settings: AppSettings, filePaths: string[]): Pro
     throw new Error('Recipient email is not set. Go to Settings and enter a recipient email.')
   }
 
-  const transporter = getTransporter(settings)
+  const transporter = await getTransporter(settings)
+  const from = accountEmail(settings)
   const results: SendFilesResult['results'] = []
   let sent = 0
   let failed = 0
 
-  for (const filePath of filePaths) {
+  // Throttle between sends to stay within provider rate limits and avoid spam filtering.
+  const delayMs = Math.max(0, Number(settings.sendDelayMs) || 0)
+
+  for (let i = 0; i < filePaths.length; i++) {
+    if (i > 0 && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+    const filePath = filePaths[i]
     const fileName = path.basename(filePath)
     try {
       await fs.access(filePath)
       await transporter.sendMail({
-        from: settings.email.trim(),
+        from,
         to: settings.recipientEmail.trim(),
-        subject: '',
+        // A non-empty subject reduces the chance of being flagged as spam.
+        subject: settings.emailSubject?.trim() || fileName,
         text: '',
         attachments: [{ filename: fileName, path: filePath }],
       })
@@ -74,11 +131,12 @@ export async function checkResponses(settings: AppSettings): Promise<CheckRespon
 
   await fs.mkdir(settings.downloadFolder, { recursive: true })
 
+  const accessToken = settings.authMethod === 'oauth' ? await ensureAccessToken(settings) : ''
   const client = new ImapFlow({
     host: settings.imapHost,
     port: settings.imapPort,
     secure: true,
-    auth: { user: settings.email.trim(), pass: settings.appPassword.trim() },
+    auth: getImapAuth(settings, accessToken),
     logger: false,
   })
 
@@ -161,18 +219,19 @@ export async function testConnection(settings: AppSettings): Promise<{ smtp: boo
     return { ...out, error: e?.message ?? 'Missing credentials' }
   }
   try {
-    const transporter = getTransporter(settings)
+    const transporter = await getTransporter(settings)
     await transporter.verify()
     out.smtp = true
   } catch (e: any) {
     out.error = `SMTP: ${e?.message ?? 'failed'}`
   }
   try {
+    const accessToken = settings.authMethod === 'oauth' ? await ensureAccessToken(settings) : ''
     const client = new ImapFlow({
       host: settings.imapHost,
       port: settings.imapPort,
       secure: true,
-      auth: { user: settings.email.trim(), pass: settings.appPassword.trim() },
+      auth: getImapAuth(settings, accessToken),
       logger: false,
     })
     await client.connect()

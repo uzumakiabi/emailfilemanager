@@ -15,4 +15,13 @@ contextBridge.exposeInMainWorld('api', {
   sendFiles: (filePaths: string[]) => ipcRenderer.invoke('mail:sendFiles', filePaths),
   checkResponses: () => ipcRenderer.invoke('mail:checkResponses'),
   testConnection: (override?: Partial<AppSettings>) => ipcRenderer.invoke('mail:testConnection', override),
+
+  startOAuth: (provider: AppSettings['provider']) => ipcRenderer.invoke('oauth:start', provider),
+  disconnectOAuth: () => ipcRenderer.invoke('oauth:disconnect'),
+
+  getAdminConfig: () => ipcRenderer.invoke('admin:getConfig'),
+  setAdminPassword: (password: string) => ipcRenderer.invoke('admin:setPassword', password),
+  verifyAdminPassword: (password: string) => ipcRenderer.invoke('admin:verifyPassword', password),
+  setProviderCredentials: (provider: AppSettings['provider'], clientId: string, clientSecret: string) =>
+    ipcRenderer.invoke('admin:setProviderCredentials', provider, clientId, clientSecret),
 })

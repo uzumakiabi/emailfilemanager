@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
   Send, Inbox, CheckCircle2, XCircle, Loader2, RefreshCcw, FilePlus2, X,
-  AtSign, FolderDown, Activity, Trash2,
+  AtSign, FolderDown, Activity, Trash2, Link2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AppSettings, ActivityLogEntry } from '@/electron-api'
@@ -42,6 +42,26 @@ export default function Dashboard() {
   }
 
   const removeFile = (path: string) => setFiles((prev) => prev.filter((f) => f !== path))
+
+  const [connecting, setConnecting] = useState(false)
+
+  const handleConnect = async () => {
+    if (!settings) return
+    setConnecting(true)
+    try {
+      const res = await window.api.startOAuth(settings.provider)
+      if (res.ok && res.data) {
+        setSettings(res.data)
+        toast.success(t('settings.oauth.connected'))
+      } else {
+        toast.error(res.error ?? t('settings.oauth.connectFailed'))
+      }
+    } catch {
+      toast.error(t('settings.oauth.connectFailed'))
+    } finally {
+      setConnecting(false)
+    }
+  }
 
   const recipientLabel = settings?.recipientEmail || t('send.theRecipient')
 
@@ -107,7 +127,11 @@ export default function Dashboard() {
 
   if (!settings) return <div className="py-12 text-center text-sm text-muted-foreground">{t('common.loading')}</div>
 
-  const configured = Boolean(settings.email && settings.appPassword && settings.recipientEmail)
+  const accountConfigured =
+    settings.authMethod === 'oauth'
+      ? Boolean(settings.oauthRefreshToken)
+      : Boolean(settings.email && settings.appPassword)
+  const configured = Boolean(accountConfigured && settings.recipientEmail)
 
   return (
     <div className="space-y-6">
@@ -117,8 +141,18 @@ export default function Dashboard() {
       </div>
 
       {!configured && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
-          {t('dashboard.notConfigured', { settings: t('dashboard.settingsLink') })}
+        <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 flex items-center gap-3">
+          <span className="flex-1">
+            {settings.authMethod === 'oauth' && !settings.oauthRefreshToken
+              ? t('dashboard.notConnectedOAuth', { provider: t(`provider.${settings.provider}.label`) })
+              : t('dashboard.notConfigured', { settings: t('dashboard.settingsLink') })}
+          </span>
+          {settings.authMethod === 'oauth' && !settings.oauthRefreshToken && (
+            <Button size="sm" onClick={handleConnect} disabled={connecting}>
+              {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+              {t('settings.oauth.connect', { provider: t(`provider.${settings.provider}.label`) })}
+            </Button>
+          )}
         </div>
       )}
 
@@ -153,6 +187,12 @@ export default function Dashboard() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {files.length > 20 && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
+              {t('send.largeBatchWarning', { count: files.length })}
+            </div>
           )}
 
           <Button className="w-full" size="lg" onClick={handleSend} disabled={busy || files.length === 0 || !configured}>

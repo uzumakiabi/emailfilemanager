@@ -1,10 +1,17 @@
 import type { ProviderId } from './providers'
 
+export type AuthMethod = 'oauth' | 'password'
+
 export interface AppSettings {
   language: 'en' | 'mk'
   provider: ProviderId
+  authMethod: AuthMethod
   email: string
   appPassword: string
+  oauthAccessToken: string
+  oauthRefreshToken: string
+  oauthTokenExpiry: number | null
+  oauthEmail: string
   smtpHost: string
   smtpPort: number
   smtpSecure: boolean
@@ -12,6 +19,8 @@ export interface AppSettings {
   imapPort: number
   recipientEmail: string
   downloadFolder: string
+  sendDelayMs: number
+  emailSubject: string
 }
 
 export interface ActivityLogEntry {

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Mail, Settings as SettingsIcon, LayoutDashboard } from 'lucide-react'
+import { Mail, Settings as SettingsIcon, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import Dashboard from './pages/Dashboard'
 import SettingsPage from './pages/Settings'
+import AdminPage from './pages/Admin'
 
-type Tab = 'dashboard' | 'settings'
+type Tab = 'dashboard' | 'settings' | 'admin'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('dashboard')
@@ -24,6 +25,7 @@ export default function App() {
         <nav className="ml-auto flex items-center gap-1">
           <NavButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')} icon={<LayoutDashboard className="w-4 h-4" />} label={t('nav.dashboard')} />
           <NavButton active={tab === 'settings'} onClick={() => setTab('settings')} icon={<SettingsIcon className="w-4 h-4" />} label={t('nav.settings')} />
+          <NavButton active={tab === 'admin'} onClick={() => setTab('admin')} icon={<ShieldCheck className="w-4 h-4" />} label={t('nav.admin')} />
           <div className="ml-2 flex items-center rounded-md border overflow-hidden">
             <LangButton active={language === 'en'} onClick={() => setLanguage('en')} label="EN" />
             <LangButton active={language === 'mk'} onClick={() => setLanguage('mk')} label="МК" />
@@ -31,7 +33,11 @@ export default function App() {
         </nav>
       </header>
       <main className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto">{tab === 'dashboard' ? <Dashboard /> : <SettingsPage />}</div>
+        <div className="max-w-4xl mx-auto">
+          {tab === 'dashboard' && <Dashboard />}
+          {tab === 'settings' && <SettingsPage />}
+          {tab === 'admin' && <AdminPage />}
+        </div>
       </main>
     </div>
   )

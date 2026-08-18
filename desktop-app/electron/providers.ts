@@ -8,8 +8,11 @@ export interface ProviderPreset {
   smtpSecure: boolean
   imapHost: string
   imapPort: number
+  supportsOAuth: boolean
   helpUrl: string
   helpText: string
+  dailyLimit: number | null
+  recommendedDelayMs: number
 }
 
 export const PROVIDER_PRESETS: Record<ProviderId, ProviderPreset> = {
@@ -21,19 +24,25 @@ export const PROVIDER_PRESETS: Record<ProviderId, ProviderPreset> = {
     smtpSecure: true,
     imapHost: 'imap.gmail.com',
     imapPort: 993,
-    helpUrl: 'https://myaccount.google.com/apppasswords',
-    helpText: 'Enable 2-Step Verification, then create an App Password at myaccount.google.com/apppasswords and use it here (not your normal password).',
+    supportsOAuth: true,
+    helpUrl: 'https://console.cloud.google.com/apis/credentials',
+    helpText: 'Create a Google OAuth Client ID (type: Desktop app) in the Google Cloud Console, then click "Connect with Google". No app password or 2-Step Verification needed.',
+    dailyLimit: 500,
+    recommendedDelayMs: 2000,
   },
   outlook: {
     id: 'outlook',
     label: 'Outlook / Microsoft 365',
-    smtpHost: 'smtp-mail.outlook.com',
+    smtpHost: 'smtp.office365.com',
     smtpPort: 587,
     smtpSecure: false,
     imapHost: 'outlook.office365.com',
     imapPort: 993,
-    helpUrl: 'https://account.live.com/proofs/AppPassword',
-    helpText: 'Enable 2-Step Verification, then create an App Password at account.live.com/proofs/AppPassword and use it here.',
+    supportsOAuth: true,
+    helpUrl: 'https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
+    helpText: 'Register an app in the Azure portal, add the SMTP.Send and IMAP.AccessAsUser.All permissions, then click "Connect with Microsoft". No app password needed.',
+    dailyLimit: 300,
+    recommendedDelayMs: 2000,
   },
   yahoo: {
     id: 'yahoo',
@@ -43,8 +52,11 @@ export const PROVIDER_PRESETS: Record<ProviderId, ProviderPreset> = {
     smtpSecure: true,
     imapHost: 'imap.mail.yahoo.com',
     imapPort: 993,
-    helpUrl: 'https://login.yahoo.com/account/security',
-    helpText: 'Enable 2-Step Verification, then generate an App Password in your Yahoo Account Security page and use it here.',
+    supportsOAuth: true,
+    helpUrl: 'https://developer.yahoo.com/apps/create/',
+    helpText: 'Create a Yahoo app in the Yahoo Developer Network, then click "Connect with Yahoo". No app password needed.',
+    dailyLimit: 500,
+    recommendedDelayMs: 2000,
   },
   custom: {
     id: 'custom',
@@ -54,7 +66,10 @@ export const PROVIDER_PRESETS: Record<ProviderId, ProviderPreset> = {
     smtpSecure: false,
     imapHost: '',
     imapPort: 993,
+    supportsOAuth: false,
     helpUrl: '',
-    helpText: 'Enter the SMTP and IMAP host/port details provided by your email provider or IT admin.',
+    helpText: 'Enter the SMTP and IMAP host/port details and your account password provided by your email provider or IT admin.',
+    dailyLimit: null,
+    recommendedDelayMs: 2000,
   },
 }

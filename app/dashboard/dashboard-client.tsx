@@ -11,6 +11,7 @@ import {
   FolderOpen, FolderDown, AtSign, FileText, Activity, Trash2, AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import DownloadDialog from '@/components/download-dialog'
 
 type Settings = { sourceFolder: string; destinationFolder: string; recipientEmail: string }
 type GoogleStatus = { configured: boolean; connected: boolean; googleEmail: string | null }
@@ -178,9 +179,12 @@ export default function DashboardClient({ initialSettings, googleStatus: initial
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-display font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Send Drive files and collect Gmail responses in one place.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-display font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Send Drive files and collect Gmail responses in one place.</p>
+        </div>
+        <DownloadDialog />
       </div>
 
       {/* Google connection card */}

@@ -9,7 +9,7 @@
     "dev": "concurrently -k \"vite\" \"npm:dev:electron\"",
     "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development tsc -p electron/tsconfig.json && electron dist-electron/main.js",
     "build:renderer": "vite build",
-    "build:electron": "tsc -p electron/tsconfig.json",
+    "build:electron": "tsc -p electron/tsconfig.json && node scripts/copy-oauth-credentials.js",
     "build": "npm run build:renderer && npm run build:electron",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",

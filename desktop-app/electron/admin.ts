@@ -1,7 +1,6 @@
 import Store from 'electron-store'
 import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
 import type { ProviderId } from './providers'
-import bakedCredentials from './oauth-credentials.json'
 
 export interface ProviderClientCredentials {
   clientId: string
@@ -21,14 +20,31 @@ interface AdminStoreSchema {
 
 const EMPTY_CREDS: ProviderClientCredentials = { clientId: '', clientSecret: '' }
 
-// Credentials baked in at build time (from oauth-credentials.json). Used as a
-// fallback so users can connect without any admin setup.
-const BAKED_CREDS: Record<ProviderId, ProviderClientCredentials> = {
-  gmail: bakedCredentials.gmail ?? { ...EMPTY_CREDS },
-  outlook: bakedCredentials.outlook ?? { ...EMPTY_CREDS },
-  yahoo: bakedCredentials.yahoo ?? { ...EMPTY_CREDS },
-  custom: { ...EMPTY_CREDS },
+// Credentials baked in at build time (from oauth-credentials.json). Loaded at
+// runtime so the build does not fail when the file is absent (e.g. in CI, where
+// the real credentials are intentionally not committed). Used as a fallback so
+// users can connect without any admin setup.
+function loadBakedCredentials(): Record<ProviderId, ProviderClientCredentials> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const raw = require('./oauth-credentials.json') as Record<string, { clientId?: string; clientSecret?: string }>
+    return {
+      gmail: raw.gmail?.clientId ? { clientId: raw.gmail.clientId, clientSecret: raw.gmail.clientSecret ?? '' } : { ...EMPTY_CREDS },
+      outlook: raw.outlook?.clientId ? { clientId: raw.outlook.clientId, clientSecret: raw.outlook.clientSecret ?? '' } : { ...EMPTY_CREDS },
+      yahoo: raw.yahoo?.clientId ? { clientId: raw.yahoo.clientId, clientSecret: raw.yahoo.clientSecret ?? '' } : { ...EMPTY_CREDS },
+      custom: { ...EMPTY_CREDS },
+    }
+  } catch {
+    return {
+      gmail: { ...EMPTY_CREDS },
+      outlook: { ...EMPTY_CREDS },
+      yahoo: { ...EMPTY_CREDS },
+      custom: { ...EMPTY_CREDS },
+    }
+  }
 }
+
+const BAKED_CREDS = loadBakedCredentials()
 
 const store = new Store<AdminStoreSchema>({
   name: 'admin',

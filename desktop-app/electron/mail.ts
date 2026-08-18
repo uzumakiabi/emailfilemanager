@@ -8,6 +8,24 @@ import type { AppSettings, SendFilesResult, CheckResponsesResult } from './types
 import { addLog, saveSettings } from './store'
 import { refreshAccessToken } from './oauth'
 import { getProviderCredentials } from './admin'
+import { PROVIDER_PRESETS } from './providers'
+
+/**
+ * Always resolve SMTP/IMAP connection params from the known provider preset
+ * (rather than trusting persisted settings, which can drift/desync across
+ * versions or platforms) so a Gmail/Outlook/Yahoo account never ends up
+ * pointed at the wrong host/port/secure combination.
+ */
+function resolveConnectionParams(settings: AppSettings) {
+  const preset = settings.provider !== 'custom' ? PROVIDER_PRESETS[settings.provider] : null
+  return {
+    smtpHost: preset ? preset.smtpHost : settings.smtpHost,
+    smtpPort: preset ? preset.smtpPort : settings.smtpPort,
+    smtpSecure: preset ? preset.smtpSecure : settings.smtpSecure,
+    imapHost: preset ? preset.imapHost : settings.imapHost,
+    imapPort: preset ? preset.imapPort : settings.imapPort,
+  }
+}
 
 const syncStore = new Store<{ lastUid: Record<string, number> }>({ name: 'sync', defaults: { lastUid: {} } })
 
@@ -68,12 +86,27 @@ function getImapAuth(settings: AppSettings, accessToken: string) {
 
 async function getTransporter(settings: AppSettings) {
   const accessToken = settings.authMethod === 'oauth' ? await ensureAccessToken(settings) : ''
+  const { smtpHost, smtpPort, smtpSecure } = resolveConnectionParams(settings)
   return nodemailer.createTransport({
-    host: settings.smtpHost,
-    port: settings.smtpPort,
-    secure: settings.smtpSecure,
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
     auth: getSmtpAuth(settings, accessToken),
   })
+}
+
+/** Turns raw SMTP/IMAP auth failures into an actionable message instead of the raw protocol error. */
+function friendlyMailError(e: any, settings: AppSettings): string {
+  const raw = e?.message ?? 'unknown error'
+  const code = e?.responseCode ?? e?.code
+  const isAuthFailure =
+    code === 530 || code === 535 || code === 'EAUTH' || /auth(entication)? (required|failed)/i.test(raw)
+  if (isAuthFailure) {
+    return settings.authMethod === 'oauth'
+      ? 'Authentication failed. Your Google/Microsoft/Yahoo authorization may have expired or been revoked — go to Settings and click "Connect" again.'
+      : 'Authentication failed. Check your email/password in Settings (Gmail and most providers require an app-specific password, not your regular login password).'
+  }
+  return raw
 }
 
 export async function sendFiles(settings: AppSettings, filePaths: string[]): Promise<SendFilesResult> {
@@ -112,8 +145,9 @@ export async function sendFiles(settings: AppSettings, filePaths: string[]): Pro
       addLog({ action: 'SEND_FILE', fileName, recipient: settings.recipientEmail, status: 'SUCCESS', message: `Sent to ${settings.recipientEmail}` })
     } catch (e: any) {
       failed += 1
-      results.push({ name: fileName, ok: false, error: e?.message ?? 'unknown error' })
-      addLog({ action: 'SEND_FILE', fileName, recipient: settings.recipientEmail, status: 'FAILED', message: e?.message ?? 'unknown error' })
+      const message = friendlyMailError(e, settings)
+      results.push({ name: fileName, ok: false, error: message })
+      addLog({ action: 'SEND_FILE', fileName, recipient: settings.recipientEmail, status: 'FAILED', message })
     }
   }
 
@@ -132,9 +166,10 @@ export async function checkResponses(settings: AppSettings): Promise<CheckRespon
   await fs.mkdir(settings.downloadFolder, { recursive: true })
 
   const accessToken = settings.authMethod === 'oauth' ? await ensureAccessToken(settings) : ''
+  const { imapHost, imapPort } = resolveConnectionParams(settings)
   const client = new ImapFlow({
-    host: settings.imapHost,
-    port: settings.imapPort,
+    host: imapHost,
+    port: imapPort,
     secure: true,
     auth: getImapAuth(settings, accessToken),
     logger: false,
@@ -223,13 +258,14 @@ export async function testConnection(settings: AppSettings): Promise<{ smtp: boo
     await transporter.verify()
     out.smtp = true
   } catch (e: any) {
-    out.error = `SMTP: ${e?.message ?? 'failed'}`
+    out.error = `SMTP: ${friendlyMailError(e, settings)}`
   }
   try {
     const accessToken = settings.authMethod === 'oauth' ? await ensureAccessToken(settings) : ''
+    const { imapHost, imapPort } = resolveConnectionParams(settings)
     const client = new ImapFlow({
-      host: settings.imapHost,
-      port: settings.imapPort,
+      host: imapHost,
+      port: imapPort,
       secure: true,
       auth: getImapAuth(settings, accessToken),
       logger: false,
@@ -238,7 +274,7 @@ export async function testConnection(settings: AppSettings): Promise<{ smtp: boo
     await client.logout()
     out.imap = true
   } catch (e: any) {
-    out.error = `${out.error ? out.error + ' | ' : ''}IMAP: ${e?.message ?? 'failed'}`
+    out.error = `${out.error ? out.error + ' | ' : ''}IMAP: ${friendlyMailError(e, settings)}`
   }
   return out
 }

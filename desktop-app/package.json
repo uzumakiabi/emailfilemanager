@@ -1,6 +1,6 @@
 {
   "name": "pratiplati",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "main": "dist-electron/main.js",
   "description": "Send files as email attachments one by one, and download attachments from reply emails. Works with Gmail, Outlook, Yahoo, or custom IMAP/SMTP.",
@@ -66,8 +66,11 @@
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "identity": null,
+      "gatekeeperAssess": false
     },
+    "afterSign": "scripts/afterSignHook.js",
     "win": {
       "target": [
         "nsis"

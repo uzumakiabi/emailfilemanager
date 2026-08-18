@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 
-const RELEASE_TAG = 'v2.0.0'
+const RELEASE_TAG = 'v2.0.1'
 const BASE = `https://github.com/uzumakiabi/emailfilemanager/releases/download/${RELEASE_TAG}`
 
 const downloads = [
@@ -21,21 +21,21 @@ const downloads = [
     label: 'macOS · Apple Silicon',
     detail: 'For M1, M2, M3 and newer Macs',
     icon: Apple,
-    href: `${BASE}/pratiplati-2.0.0-arm64.dmg`,
+    href: `${BASE}/pratiplati-2.0.1-arm64.dmg`,
   },
   {
     id: 'mac-intel',
     label: 'macOS · Intel',
     detail: 'For Intel-based Macs',
     icon: Monitor,
-    href: `${BASE}/pratiplati-2.0.0.dmg`,
+    href: `${BASE}/pratiplati-2.0.1.dmg`,
   },
   {
     id: 'windows',
     label: 'Windows',
     detail: 'Windows 10 and 11',
     icon: HardDrive,
-    href: `${BASE}/pratiplati.Setup.2.0.0.exe`,
+    href: `${BASE}/pratiplati.Setup.2.0.1.exe`,
   },
 ]
 
@@ -79,6 +79,9 @@ export default function DownloadDialog() {
         </div>
         <p className="text-xs text-muted-foreground">
           Downloads are hosted on GitHub Releases. The app runs entirely on your machine — your files and credentials never leave your computer.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          On macOS, the app isn&apos;t notarized by Apple yet. If you see &quot;can&apos;t be opened&quot;, right-click the app in Finder and choose <strong>Open</strong>, then confirm.
         </p>
       </DialogContent>
     </Dialog>

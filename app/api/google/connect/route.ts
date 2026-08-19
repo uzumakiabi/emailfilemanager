@@ -16,7 +16,10 @@ export async function GET() {
 
   const url = oauth2.generateAuthUrl({
     access_type: 'offline',
-    prompt: 'consent',
+    // Always show the Google account chooser, even if the browser already has an
+    // active session for a different account — otherwise "Connect Google" silently
+    // reuses whatever account is currently signed into the browser.
+    prompt: 'select_account consent',
     scope: GOOGLE_SCOPES,
     state: userId,
     include_granted_scopes: true,

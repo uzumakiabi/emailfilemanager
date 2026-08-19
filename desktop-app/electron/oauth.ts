@@ -10,6 +10,9 @@ export interface OAuthProviderConfig {
   usePkce: boolean
   useClientSecret: boolean
   userInfoUrl?: string
+  /** Value for the `prompt` param, forcing the account chooser so the OS browser's
+   *  existing session for a different account is never silently reused. */
+  prompt: string
 }
 
 export const OAUTH_PROVIDERS: Record<ProviderId, OAuthProviderConfig | null> = {
@@ -20,6 +23,7 @@ export const OAUTH_PROVIDERS: Record<ProviderId, OAuthProviderConfig | null> = {
     usePkce: false,
     useClientSecret: true,
     userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    prompt: 'select_account consent',
   },
   outlook: {
     authorizeUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
@@ -35,6 +39,7 @@ export const OAUTH_PROVIDERS: Record<ProviderId, OAuthProviderConfig | null> = {
     usePkce: true,
     useClientSecret: false,
     userInfoUrl: 'https://graph.microsoft.com/oidc/userinfo',
+    prompt: 'select_account',
   },
   yahoo: {
     authorizeUrl: 'https://api.login.yahoo.com/oauth2/request_auth',
@@ -43,6 +48,7 @@ export const OAUTH_PROVIDERS: Record<ProviderId, OAuthProviderConfig | null> = {
     usePkce: false,
     useClientSecret: true,
     userInfoUrl: 'https://api.login.yahoo.com/openid/v1/userinfo',
+    prompt: 'login',
   },
   custom: null,
 }
@@ -126,7 +132,11 @@ export async function startOAuthFlow(provider: ProviderId, clientId: string, cli
     scope: config.scopes.join(' '),
     state,
     access_type: 'offline',
-    prompt: 'consent',
+    // Always show the account chooser, even if the system browser already has
+    // an active session for a different account. Without this, "Connect" can
+    // silently reuse whatever account is currently signed into the browser
+    // instead of letting the user pick the intended one.
+    prompt: config.prompt,
   })
   if (codeChallenge) {
     params.set('code_challenge', codeChallenge)

@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 
-const RELEASE_TAG = 'v2.0.2'
+const RELEASE_TAG = 'v2.0.3'
 const BASE = `https://github.com/uzumakiabi/emailfilemanager/releases/download/${RELEASE_TAG}`
 
 const downloads = [
@@ -21,21 +21,21 @@ const downloads = [
     label: 'macOS · Apple Silicon',
     detail: 'For M1, M2, M3 and newer Macs',
     icon: Apple,
-    href: `${BASE}/pratiplati-2.0.2-arm64.dmg`,
+    href: `${BASE}/pratiplati-2.0.3-arm64.dmg`,
   },
   {
     id: 'mac-intel',
     label: 'macOS · Intel',
     detail: 'For Intel-based Macs',
     icon: Monitor,
-    href: `${BASE}/pratiplati-2.0.2.dmg`,
+    href: `${BASE}/pratiplati-2.0.3.dmg`,
   },
   {
     id: 'windows',
     label: 'Windows',
     detail: 'Windows 10 and 11',
     icon: HardDrive,
-    href: `${BASE}/pratiplati.Setup.2.0.2.exe`,
+    href: `${BASE}/pratiplati.Setup.2.0.3.exe`,
   },
 ]
 

@@ -56,8 +56,9 @@ export async function POST() {
     const gmail = google.gmail({ version: 'v1', auth: oauth2 })
     const drive = google.drive({ version: 'v3', auth: oauth2 })
 
-    const destFolderId = await findOrCreateFolder(drive, destFolder)
-    if (!destFolderId) return NextResponse.json({ error: `Destination folder "${destFolder}" could not be created` }, { status: 500 })
+    const destFolderRes = await findOrCreateFolder(drive, destFolder)
+    if (!destFolderRes.id) return NextResponse.json({ error: destFolderRes.error ?? `Destination folder "${destFolder}" could not be created` }, { status: 500 })
+    const destFolderId = destFolderRes.id
 
     const processedLabelId = await ensureLabel(gmail, PROCESSED_LABEL)
 

@@ -94,12 +94,17 @@ ipcMain.handle('oauth:start', async (_e, provider: AppSettings['provider']) => {
     }
     const result = await startOAuthFlow(provider, creds.clientId, creds.clientSecret)
     const current = getSettings()
+    // Google only returns a refresh_token the FIRST time a given client+account is
+    // authorized. On a re-connect of the same account it returns none, so we must
+    // keep the previously stored refresh token instead of wiping it — otherwise the
+    // account becomes unusable ("no refresh token") after the first reconnect.
+    const refreshToken = result.refreshToken || current.oauthRefreshToken || ''
     const merged = saveSettings({
       provider,
       authMethod: 'oauth',
       email: result.email || current.email,
       oauthAccessToken: result.accessToken,
-      oauthRefreshToken: result.refreshToken || '',
+      oauthRefreshToken: refreshToken,
       oauthTokenExpiry: result.expiry,
       oauthEmail: result.email || '',
     })

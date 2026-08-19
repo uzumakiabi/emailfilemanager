@@ -87,8 +87,9 @@ export async function POST() {
     const drive = google.drive({ version: 'v3', auth: oauth2 })
     const gmail = google.gmail({ version: 'v1', auth: oauth2 })
 
-    const folderId = await findOrCreateFolder(drive, sourceFolder)
-    if (!folderId) return NextResponse.json({ error: `Source folder "${sourceFolder}" not found` }, { status: 404 })
+    const folder = await findOrCreateFolder(drive, sourceFolder)
+    if (!folder.id) return NextResponse.json({ error: folder.error ?? `Source folder "${sourceFolder}" not found` }, { status: 404 })
+    const folderId = folder.id
 
     const listRes = await drive.files.list({
       q: `'${folderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`,

@@ -18,8 +18,9 @@ export async function GET() {
 
   try {
     const drive = google.drive({ version: 'v3', auth: oauth2 })
-    const folderId = await findOrCreateFolder(drive, sourceFolder)
-    if (!folderId) return NextResponse.json({ error: `Folder "${sourceFolder}" not found` }, { status: 404 })
+    const folder = await findOrCreateFolder(drive, sourceFolder)
+    if (!folder.id) return NextResponse.json({ error: folder.error ?? `Folder "${sourceFolder}" not found` }, { status: 404 })
+    const folderId = folder.id
 
     const res = await drive.files.list({
       q: `'${folderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`,

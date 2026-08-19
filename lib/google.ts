@@ -62,18 +62,32 @@ export async function getAuthorizedClient(userId: string) {
   return { oauth2, account, error: null }
 }
 
-export async function findOrCreateFolder(drive: any, folderName: string): Promise<string | null> {
+export async function findOrCreateFolder(drive: any, folderName: string): Promise<{ id: string | null; error?: string }> {
+  const name = (folderName ?? '').trim()
+  if (!name) return { id: null, error: 'Source folder name is empty. Set it in Settings.' }
   try {
-    const q = `mimeType = 'application/vnd.google-apps.folder' and name = '${folderName.replace(/'/g, "\\'")}' and trashed = false`
-    const res = await drive.files.list({ q, fields: 'files(id, name)', pageSize: 10, spaces: 'drive' })
-    const existing = res?.data?.files?.[0]
-    if (existing?.id) return existing.id
+    // Search the authenticated user's own My Drive (spaces: 'drive') for a folder
+    // with this exact name. Prefer one at the Drive root so we don't pick up a
+    // same-named folder that was shared with the user from another account.
+    const q = `mimeType = 'application/vnd.google-apps.folder' and name = '${name.replace(/'/g, "\\'")}' and trashed = false`
+    const res = await drive.files.list({ q, fields: 'files(id, name, parents)', pageSize: 50, spaces: 'drive' })
+    const files = res?.data?.files ?? []
+    const root = files.find((f: any) => !f?.parents || f.parents.length === 0 || f.parents.includes('root'))
+    const existing = root?.id ?? files[0]?.id
+    if (existing) return { id: existing }
     const created = await drive.files.create({
-      requestBody: { name: folderName, mimeType: 'application/vnd.google-apps.folder' },
+      requestBody: { name, mimeType: 'application/vnd.google-apps.folder' },
       fields: 'id',
     })
-    return created?.data?.id ?? null
-  } catch {
-    return null
+    return { id: created?.data?.id ?? null }
+  } catch (e: any) {
+    const msg = e?.message ?? String(e)
+    // Surface the common "API not enabled" case so the user knows to enable it
+    // in Google Cloud Console instead of a confusing "folder not found".
+    if (/has not been used in project|is disabled|accessNotConfigured/i.test(msg)) {
+      return { id: null, error: 'Google Drive API is not enabled for this app. Enable the "Google Drive API" (and "Gmail API") in Google Cloud Console, then try again.' }
+    }
+    console.error('findOrCreateFolder error:', msg)
+    return { id: null, error: `Could not access the "${name}" folder: ${msg}` }
   }
 }

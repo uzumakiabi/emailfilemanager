@@ -156,6 +156,18 @@ export default function Dashboard() {
         </div>
       )}
 
+      {settings.authMethod === 'oauth' && settings.oauthRefreshToken && (
+        <div className="rounded-md bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900 flex items-center gap-3">
+          <span className="flex-1">
+            {t('settings.oauth.connectedAs', { email: settings.oauthEmail || settings.email })}
+          </span>
+          <Button size="sm" variant="outline" onClick={handleConnect} disabled={connecting}>
+            {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+            {t('settings.oauth.switchAccount')}
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoCard icon={<AtSign className="w-5 h-5" />} label={t('dashboard.recipientEmail')} value={settings.recipientEmail || t('common.notSet')} />
         <InfoCard icon={<FolderDown className="w-5 h-5" />} label={t('dashboard.downloadFolder')} value={settings.downloadFolder || t('common.notSet')} />

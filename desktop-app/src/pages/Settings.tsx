@@ -128,11 +128,17 @@ const pickDownloadFolder = async () => {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {settings.oauthRefreshToken ? (
-                  <Button variant="outline" size="sm" onClick={handleDisconnect}>
-                    <Unlink className="w-4 h-4" /> {t('settings.oauth.disconnect')}
-                  </Button>
+                  <>
+                    <Button size="sm" onClick={handleConnect} disabled={connecting}>
+                      {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                      {t('settings.oauth.switchAccount')}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDisconnect}>
+                      <Unlink className="w-4 h-4" /> {t('settings.oauth.disconnect')}
+                    </Button>
+                  </>
                 ) : (
                   <Button size="sm" onClick={handleConnect} disabled={connecting}>
                     {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}

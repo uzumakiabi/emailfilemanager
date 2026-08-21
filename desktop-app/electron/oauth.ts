@@ -19,7 +19,11 @@ export const OAUTH_PROVIDERS: Record<ProviderId, OAuthProviderConfig | null> = {
   gmail: {
     authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
     tokenUrl: 'https://oauth2.googleapis.com/token',
-    scopes: ['https://mail.google.com/'],
+    // https://mail.google.com/ grants full Gmail access for sending/reading.
+    // openid + email + profile are required so the userinfo endpoint returns the
+    // account's email address — without them the app can't tell which account was
+    // authorized and falls back to showing the previously-connected account.
+    scopes: ['https://mail.google.com/', 'openid', 'email', 'profile'],
     usePkce: false,
     useClientSecret: true,
     userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
@@ -192,10 +196,19 @@ export async function startOAuthFlow(provider: ProviderId, clientId: string, cli
       })
       const info: any = await infoRes.json().catch(() => ({}))
       email = info?.email ?? info?.preferred_username ?? null
-    } catch {
+      console.log('[oauth] userinfo response:', JSON.stringify({ status: infoRes.status, email, hasError: !!info?.error }))
+    } catch (e: any) {
+      console.log('[oauth] userinfo fetch failed:', e?.message ?? e)
       email = null
     }
   }
+
+  console.log('[oauth] token exchange result:', JSON.stringify({
+    hasAccessToken: !!tokenData.access_token,
+    hasRefreshToken: !!tokenData.refresh_token,
+    email,
+    scope: tokenData.scope,
+  }))
 
   return {
     accessToken: tokenData.access_token,

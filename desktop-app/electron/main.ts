@@ -95,10 +95,12 @@ ipcMain.handle('oauth:start', async (_e, provider: AppSettings['provider']) => {
     const result = await startOAuthFlow(provider, creds.clientId, creds.clientSecret)
     const current = getSettings()
     // Google only returns a refresh_token the FIRST time a given client+account is
-    // authorized. On a re-connect of the same account it returns none, so we must
-    // keep the previously stored refresh token instead of wiping it — otherwise the
-    // account becomes unusable ("no refresh token") after the first reconnect.
-    const refreshToken = result.refreshToken || current.oauthRefreshToken || ''
+    // authorized. On a re-connect of the SAME account it returns none, so we keep the
+    // previously stored refresh token. But if the user authorized a DIFFERENT account
+    // (email changed), the old refresh token belongs to the old account and must NOT
+    // be reused — otherwise the new account can't refresh and the old one lingers.
+    const sameAccount = result.email && current.oauthEmail && result.email === current.oauthEmail
+    const refreshToken = result.refreshToken || (sameAccount ? current.oauthRefreshToken : '') || ''
     const merged = saveSettings({
       provider,
       authMethod: 'oauth',
@@ -108,6 +110,12 @@ ipcMain.handle('oauth:start', async (_e, provider: AppSettings['provider']) => {
       oauthTokenExpiry: result.expiry,
       oauthEmail: result.email || '',
     })
+    console.log('[oauth:start] saved settings:', JSON.stringify({
+      email: merged.email,
+      oauthEmail: merged.oauthEmail,
+      hasRefreshToken: !!merged.oauthRefreshToken,
+      hasAccessToken: !!merged.oauthAccessToken,
+    }))
     addLog({ action: 'INFO', status: 'SUCCESS', message: `Connected ${provider} account${result.email ? ` (${result.email})` : ''} via OAuth` })
     return { ok: true, data: merged }
   } catch (e: any) {
